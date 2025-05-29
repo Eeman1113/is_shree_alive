@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Journal for Shree</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FFF5E1; /* Soft peach/apricot cream */
+        }
+        .journal-container {
+            max-width: 700px;
+            margin: 2.5rem auto; /* Increased margin for better centering */
+            padding: 2.5rem; /* Increased padding */
+            background-color: #FFFBF5; /* Very light, warm off-white */
+            border-radius: 16px; /* Softer, more rounded corners */
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05), 0 3px 8px rgba(0,0,0,0.03); /* Softer shadow */
+            border: 1px solid #FDEEDC; /* Lighter, peachy border */
+        }
+        .journal-header {
+            color: #E58C6A; /* Gentle terracotta/coral */
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .journal-header h1 {
+            font-weight: 600; /* Slightly bolder for the main title */
+        }
+        .journal-label {
+            color: #A98C78; /* Softer, warm grey-brown */
+            margin-bottom: 0.75rem; /* Increased spacing */
+            font-weight: 500;
+        }
+        .journal-input, .journal-textarea {
+            background-color: #FFFCF8; /* Even lighter input background */
+            border: 1px solid #FCEBE0; /* Very soft border */
+            color: #8B6B5C; /* Softer brown for text */
+            border-radius: 10px; /* Softer corners for inputs */
+            padding: 0.85rem 1rem; /* Slightly more padding */
+            width: 100%;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .journal-input::placeholder, .journal-textarea::placeholder {
+            color: #C8B8AE; /* Softer placeholder text */
+        }
+        .journal-input:focus, .journal-textarea:focus {
+            outline: none;
+            border-color: #E58C6A; /* Match header color */
+            box-shadow: 0 0 0 3px rgba(229, 140, 106, 0.15); /* Softer focus shadow */
+        }
+        .journal-button {
+            background-color: #E58C6A; /* Gentle terracotta */
+            color: white;
+            padding: 0.85rem 1.75rem; /* Adjusted padding */
+            border-radius: 10px; /* Softer corners */
+            font-weight: 500;
+            transition: background-color 0.3s, transform 0.2s;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(229, 140, 106, 0.2);
+        }
+        .journal-button:hover {
+            background-color: #D17C5A; /* Slightly darker on hover */
+            transform: translateY(-1px); /* Subtle lift effect */
+        }
+        .emoji-button {
+            background-color: #FFFCF8;
+            border: 1px solid #FCEBE0;
+            border-radius: 50%;
+            padding: 0.85rem; /* Adjusted padding */
+            font-size: 1.75rem; /* Slightly larger emojis */
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
+            color: #A98C78;
+        }
+        .emoji-button:hover {
+            transform: scale(1.15); /* More pronounced hover scale */
+            box-shadow: 0 5px 10px rgba(0,0,0,0.08);
+            background-color: #FFF8F0;
+        }
+        .emoji-button.selected {
+            background-color: #FEECE2; /* Soft peach selected background */
+            border-color: #E58C6A;
+            box-shadow: 0 0 0 3px rgba(229, 140, 106, 0.25);
+            transform: scale(1.1); /* Keep it slightly scaled when selected */
+        }
+        .past-entry {
+            background-color: #FFFCF8;
+            border: 1px solid #FDEEDC;
+            border-radius: 12px; /* Softer corners for past entries */
+            padding: 1.25rem; /* More padding */
+            margin-bottom: 1.25rem;
+        }
+        .past-entry-date {
+            font-weight: 600; /* Bolder date */
+            color: #C78C7A; /* Softer date color */
+            margin-bottom: 0.75rem;
+        }
+        .past-entry-content {
+            color: #8B6B5C;
+            font-size: 0.95rem; /* Slightly larger text in past entries */
+        }
+        .past-entry-note {
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px dashed #FCEBE0; /* Softer dashed line */
+            white-space: pre-wrap; 
+        }
+        /* Custom checkbox style - making it cuter */
+        .custom-checkbox-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            padding: 0.85rem 1rem;
+            background-color: #FFFCF8;
+            border: 1px solid #FCEBE0;
+            border-radius: 10px;
+            transition: background-color 0.3s;
+        }
+        .custom-checkbox-label:hover {
+            background-color: #FFF8F0; 
+        }
+        .custom-checkbox {
+            appearance: none;
+            width: 22px; /* Slightly larger */
+            height: 22px;
+            border: 2px solid #E58C6A;
+            border-radius: 6px; /* Softer square */
+            margin-right: 1rem; /* More space */
+            position: relative;
+            cursor: pointer;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+        .custom-checkbox:checked {
+            background-color: #E58C6A;
+            border-color: #E58C6A;
+        }
+        .custom-checkbox:checked::after {
+            content: '🌸'; /* Cute flower instead of checkmark */
+            font-size: 14px; /* Adjust if needed */
+            color: white; /* This might not be visible if emoji is colorful */
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            line-height: 1; /* Ensure emoji is centered */
+        }
+        .status-message {
+            text-align: center;
+            padding: 0.85rem 1rem;
+            margin-top: 1rem;
+            margin-bottom: 1rem; /* Added margin bottom */
+            border-radius: 10px;
+            font-weight: 500;
+        }
+        .status-success {
+            background-color: #E6FFFA; /* Softer green */
+            color: #3DBAA8; /* Darker, less harsh green text */
+            border: 1px solid #B2F5EA;
+        }
+        .status-error {
+            background-color: #FFEBEB; /* Softer red */
+            color: #E57373; /* Softer red text */
+            border: 1px solid #FFCDCD;
+        }
+        .loading-indicator {
+            text-align: center;
+            color: #A98C78;
+            padding: 1.5rem;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div class="journal-container">
+        <header class="journal-header">
+            <h1 class="text-4xl font-bold">Daily Journal</h1>
+            <p class="text-lg text-pink-500">for Shree</p> <p id="currentDate" class="text-md mt-2 text-amber-700"></p>
+            <p id="userIdDisplay" class="text-xs mt-1 text-amber-600"></p> 
+        </header>
+
+        <div id="statusMessageContainer"></div>
+
+        <section class="mb-8"> <label class="journal-label block text-lg">I'm here today:</label>
+            <label class="custom-checkbox-label">
+                <input type="checkbox" id="isAlive" class="custom-checkbox">
+                <span class="text-md text-gray-700">Yes, I made it through today.</span> </label>
+        </section>
+
+        <section class="mb-8">
+            <label class="journal-label block text-lg">My emotional state:</label>
+            <div id="mentalEmotion" class="flex space-x-2 sm:space-x-3 justify-around">
+                <button class="emoji-button" data-value="😊">😊</button>
+                <button class="emoji-button" data-value="🙂">🙂</button>
+                <button class="emoji-button" data-value="😐">😐</button>
+                <button class="emoji-button" data-value="😟">😟</button>
+                <button class="emoji-button" data-value="😢">😢</button>
+            </div>
+        </section>
+
+        <section class="mb-8">
+            <label class="journal-label block text-lg">How was my day?</label>
+            <div id="dayRating" class="flex space-x-2 sm:space-x-3 justify-around">
+                <button class="emoji-button" data-value="👍">👍</button>
+                <button class="emoji-button" data-value="👌">👌</button>
+                <button class="emoji-button" data-value="🤷">🤷</button>
+                <button class="emoji-button" data-value="👎">👎</button>
+                <button class="emoji-button" data-value="😩">😩</button>
+            </div>
+        </section>
+
+        <section class="mb-8">
+            <label for="note" class="journal-label block text-lg">My thoughts & reflections:</label>
+            <textarea id="note" rows="5" class="journal-textarea" placeholder="Write a little something... it's okay if it's short."></textarea>
+        </section>
+
+        <button id="saveEntry" class="journal-button w-full text-lg">Save Journal Entry</button>
+
+        <section class="mt-12"> <h2 class="text-2xl font-semibold text-gray-700 mb-6 border-b-2 border-gray-200 pb-3">Past Entries</h2> <div id="loadingIndicator" class="loading-indicator hidden">Loading entries...</div>
+            <div id="pastEntriesContainer">
+                </div>
+        </section>
+    </div>
+
+    <script type="module">
+        // --- Supabase Configuration and Initialization ---
+        const supabaseUrl = 'https://biyfynwphxoidjhsvboi.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpeWZ5bndwaHhvaWRqaHN2Ym9pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg1MzIwNTMsImV4cCI6MjA2NDEwODA1M30.zICLpmn5FIjUfx8Vq5g7QWY2ofuDiI7msGrTwcEXsVU';
+        const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey); // Renamed to supabaseClient to avoid conflict
+
+        console.log("Supabase client initialized:", supabaseClient);
+
+        let localUserId = null;
+        let journalSubscription = null;
+
+        // --- UI Elements ---
+        const currentDateEl = document.getElementById('currentDate');
+        const userIdDisplayEl = document.getElementById('userIdDisplay');
+        const isAliveCheckbox = document.getElementById('isAlive');
+        const mentalEmotionContainer = document.getElementById('mentalEmotion');
+        const dayRatingContainer = document.getElementById('dayRating');
+        const noteTextarea = document.getElementById('note');
+        const saveEntryButton = document.getElementById('saveEntry');
+        const pastEntriesContainer = document.getElementById('pastEntriesContainer');
+        const statusMessageContainer = document.getElementById('statusMessageContainer');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+
+        let selectedEmotion = null;
+        let selectedDayRating = null;
+
+        // --- Generate or Retrieve Local User ID ---
+        function getOrSetLocalUserId() {
+            let uid = localStorage.getItem('shreeJournalUserId');
+            if (!uid) {
+                uid = crypto.randomUUID();
+                localStorage.setItem('shreeJournalUserId', uid);
+            }
+            console.log("Local User ID for Supabase:", uid);
+            if (userIdDisplayEl) {
+                // Displaying full ID for clarity during potential debugging or if Shree needs it
+                userIdDisplayEl.textContent = `Journal ID: ${uid}`; 
+            }
+            return uid;
+        }
+
+        // --- Display Current Date ---
+        function displayCurrentDate() {
+            const today = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            currentDateEl.textContent = today.toLocaleDateString('en-US', options);
+        }
+
+        // --- Handle Emoji Button Clicks ---
+        function handleEmojiSelection(container, type) {
+            container.addEventListener('click', (event) => {
+                const button = event.target.closest('.emoji-button'); // Ensure click is on button or its child
+                if (button) {
+                    const buttons = container.querySelectorAll('.emoji-button');
+                    buttons.forEach(btn => btn.classList.remove('selected'));
+                    button.classList.add('selected');
+                    if (type === 'emotion') selectedEmotion = button.dataset.value;
+                    else if (type === 'dayRating') selectedDayRating = button.dataset.value;
+                }
+            });
+        }
+        
+        handleEmojiSelection(mentalEmotionContainer, 'emotion');
+        handleEmojiSelection(dayRatingContainer, 'dayRating');
+
+        // --- Show Status Message ---
+        function showStatusMessage(message, type = 'success') {
+            statusMessageContainer.innerHTML = `<div class="status-message status-${type}">${message}</div>`;
+            setTimeout(() => {
+                statusMessageContainer.innerHTML = '';
+            }, 3500); // Slightly longer display time
+        }
+
+        // --- Save Journal Entry to Supabase ---
+        async function saveJournalEntry() {
+            if (!localUserId) {
+                showStatusMessage("Cannot save entry: User ID not initialized.", "error");
+                console.error("Attempted to save entry before localUserId was set.");
+                return;
+            }
+
+            const entry = {
+                userId: localUserId,
+                isAlive: isAliveCheckbox.checked,
+                mentalEmotion: selectedEmotion,
+                dayRating: selectedDayRating,
+                note: noteTextarea.value.trim(),
+                dateString: new Date().toLocaleDateString('en-CA'), 
+                timestamp: new Date().toISOString() 
+            };
+
+            if (!entry.isAlive && !entry.mentalEmotion && !entry.dayRating && !entry.note) {
+                showStatusMessage("Please fill at least one field or mark your presence.", "error");
+                return;
+            }
+            
+            saveEntryButton.disabled = true;
+            saveEntryButton.textContent = "Saving...";
+
+            try {
+                const { data, error } = await supabaseClient // Use renamed client
+                    .from('shree_daily_journal')
+                    .insert([entry])
+                    .select(); 
+
+                if (error) {
+                    throw error;
+                }
+
+                console.log("Document written to Supabase: ", data);
+                showStatusMessage("Journal entry saved successfully! 💖", "success");
+                
+                isAliveCheckbox.checked = false;
+                mentalEmotionContainer.querySelectorAll('.emoji-button').forEach(btn => btn.classList.remove('selected'));
+                dayRatingContainer.querySelectorAll('.emoji-button').forEach(btn => btn.classList.remove('selected'));
+                selectedEmotion = null;
+                selectedDayRating = null;
+                noteTextarea.value = '';
+
+            } catch (error) {
+                console.error("Error adding document to Supabase: ", error);
+                showStatusMessage(`Could not save entry: ${error.message}`, "error");
+            } finally {
+                saveEntryButton.disabled = false;
+                saveEntryButton.textContent = "Save Journal Entry";
+            }
+        }
+        
+        // --- Render Entries ---
+        function renderEntries(entries) {
+            if (!entries || entries.length === 0) {
+                pastEntriesContainer.innerHTML = '<p class="text-center text-gray-600 italic py-4">No journal entries yet. Write your first one whenever you feel ready. ✨</p>';
+                return;
+            }
+            
+            entries.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+            let entriesHtml = '';
+            entries.forEach((entry) => {
+                const entryDate = new Date(entry.timestamp || entry.created_at); 
+                const formattedDate = entryDate.toLocaleDateString('en-US', {
+                    year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                });
+
+                entriesHtml += `
+                    <div class="past-entry">
+                        <p class="past-entry-date">${formattedDate}</p>
+                        <div class="past-entry-content">
+                            <p>Marked presence: <span class="font-semibold ${entry.isAlive ? 'text-green-600' : 'text-red-500'}">${entry.isAlive ? 'Yes 🌸' : 'No'}</span></p>
+                            ${entry.mentalEmotion ? `<p>Emotion: <span class="font-medium">${entry.mentalEmotion}</span></p>` : ''}
+                            ${entry.dayRating ? `<p>Day: <span class="font-medium">${entry.dayRating}</span></p>` : ''}
+                            ${entry.note ? `<div class="past-entry-note"><strong>Note:</strong><br>${escapeHtml(entry.note)}</div>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            pastEntriesContainer.innerHTML = entriesHtml;
+        }
+
+        // --- Load and Display Past Entries from Supabase & Subscribe to Changes ---
+        async function loadAndSubscribeToEntries() {
+            if (!localUserId) {
+                console.log("Local User ID not set, skipping loadPastEntries.");
+                loadingIndicator.classList.add('hidden');
+                pastEntriesContainer.innerHTML = '<p class="text-center text-gray-500">Initializing journal session...</p>';
+                return;
+            }
+            
+            loadingIndicator.classList.remove('hidden');
+            pastEntriesContainer.innerHTML = ''; 
+
+            const { data: initialEntries, error: fetchError } = await supabaseClient // Use renamed client
+                .from('shree_daily_journal')
+                .select('*')
+                .eq('userId', localUserId)
+                .order('timestamp', { ascending: false });
+
+            loadingIndicator.classList.add('hidden');
+
+            if (fetchError) {
+                console.error("Error fetching past entries from Supabase: ", fetchError);
+                pastEntriesContainer.innerHTML = '<p class="text-center text-red-500">Could not load past entries. Please check your connection or refresh.</p>';
+                showStatusMessage(`Error loading entries: ${fetchError.message}`, "error");
+                return;
+            }
+            
+            renderEntries(initialEntries);
+
+            if (journalSubscription) {
+                try {
+                    await supabaseClient.removeChannel(journalSubscription); // Use await for removeChannel
+                    console.log("Removed previous Supabase subscription.");
+                } catch (e) {
+                    console.error("Error removing channel:", e);
+                }
+                journalSubscription = null;
+            }
+            
+            journalSubscription = supabaseClient // Use renamed client
+                .channel(`shree_daily_journal_user_${localUserId}`)
+                .on(
+                    'postgres_changes',
+                    { 
+                        event: '*', 
+                        schema: 'public', 
+                        table: 'shree_daily_journal',
+                        filter: `userId=eq.${localUserId}` 
+                    },
+                    (payload) => {
+                        console.log('Supabase real-time change received!', payload);
+                        loadAndRenderAllEntries(); 
+                    }
+                )
+                .subscribe((status, err) => {
+                    if (status === 'SUBSCRIBED') {
+                        console.log('Successfully subscribed to Supabase real-time updates for shree_daily_journal!');
+                    }
+                    if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+                        console.error('Supabase subscription error:', status, err);
+                        showStatusMessage('Real-time connection issue. Refresh may be needed.', 'error');
+                    }
+                    if (err) {
+                         console.error('Supabase subscription error object:', err);
+                    }
+                });
+        }
+        
+        async function loadAndRenderAllEntries() {
+            if (!localUserId) return;
+            // No need to show loading indicator for background refreshes unless it's an explicit action
+            // loadingIndicator.classList.remove('hidden'); 
+             const { data: entries, error } = await supabaseClient // Use renamed client
+                .from('shree_daily_journal')
+                .select('*')
+                .eq('userId', localUserId)
+                .order('timestamp', { ascending: false });
+            
+            // loadingIndicator.classList.add('hidden');
+            if (error) {
+                console.error("Error re-fetching entries:", error);
+                return;
+            }
+            renderEntries(entries);
+        }
+
+        function escapeHtml(unsafe) {
+            if (unsafe === null || typeof unsafe === 'undefined') return '';
+            return unsafe
+                 .toString()
+                 .replace(/&/g, "&amp;")
+                 .replace(/</g, "&lt;")
+                 .replace(/>/g, "&gt;")
+                 .replace(/"/g, "&quot;")
+                 .replace(/'/g, "&#039;");
+        }
+
+        // --- Event Listeners ---
+        saveEntryButton.addEventListener('click', saveJournalEntry);
+
+        // --- Initializations ---
+        displayCurrentDate();
+        localUserId = getOrSetLocalUserId(); 
+        loadAndSubscribeToEntries(); 
+
+    </script>
+</body>
+</html>
